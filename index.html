@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ayaan~s time table maker</title>
+    <title>Ayaan's Timetable Maker</title>
     <!-- Load Tailwind CSS from CDN for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Load React, ReactDOM, and Babel for JSX compilation -->
@@ -18,9 +18,25 @@
         body {
             font-family: 'Inter', sans-serif;
         }
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; /* gray-300 */
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; /* gray-400 */
+        }
     </style>
 </head>
-<body class="bg-gray-50">
+<body class="bg-gray-100 text-gray-900 antialiased">
     <!-- This is where the React app will be rendered -->
     <div id="root"></div>
 
@@ -28,14 +44,16 @@
     <script type="text/babel">
         const { useState, useMemo, useEffect, useRef } = React;
 
-        // Custom UI components to simulate shadcn/ui and lucide-react
+        // --- Custom UI Components ---
         const Button = ({ children, onClick, variant = 'default', className = '', ...props }) => {
-          const baseClasses = 'px-4 py-2 rounded-md font-semibold transition-colors duration-200';
+          const baseClasses = 'inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2';
           const variantClasses = {
-            default: 'bg-blue-600 text-white hover:bg-blue-700',
-            secondary: 'bg-gray-200 text-gray-800 hover:bg-gray-300',
-            outline: 'bg-transparent border border-gray-400 text-gray-800 hover:bg-gray-100',
-            success: 'bg-green-600 text-white hover:bg-green-700'
+            default: 'bg-violet-600 text-white hover:bg-violet-700 focus-visible:ring-violet-500',
+            secondary: 'bg-gray-200 text-gray-800 hover:bg-gray-300 focus-visible:ring-gray-400',
+            outline: 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus-visible:ring-gray-400',
+            success: 'bg-lime-600 text-white hover:bg-lime-700 focus-visible:ring-lime-500',
+            danger: 'bg-rose-600 text-white hover:bg-rose-700 focus-visible:ring-rose-500',
+            ghost: 'hover:bg-gray-100 text-gray-700 hover:text-gray-900 focus-visible:ring-gray-400',
           };
           return (
             <button onClick={onClick} className={`${baseClasses} ${variantClasses[variant]} ${className}`} {...props}>
@@ -45,7 +63,7 @@
         };
 
         const Input = ({ type = 'text', value, onChange, placeholder, className = '', ...props }) => {
-          const baseClasses = 'w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500';
+          const baseClasses = 'flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
           return (
             <input
               type={type}
@@ -59,7 +77,7 @@
         };
 
         const Select = ({ value, onChange, options = [], className = '' }) => {
-          const baseClasses = 'w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500';
+          const baseClasses = 'flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1';
           return (
             <select value={value} onChange={onChange} className={`${baseClasses} ${className}`}>
               {options.map((option, index) => (
@@ -71,13 +89,13 @@
 
         const Card = ({ children, className = '' }) => {
           return (
-            <div className={`bg-white p-6 rounded-xl shadow-md ${className}`}>
+            <div className={`rounded-xl border bg-white shadow-lg p-6 ${className}`}>
               {children}
             </div>
           );
         };
         
-        // Custom SVG icons to replace lucide-react to prevent errors
+        // --- Custom SVG Icons ---
         const ToggleLeftIcon = (props) => (
           <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <rect x="2" y="6" width="20" height="12" rx="6" />
@@ -92,7 +110,6 @@
           </svg>
         );
 
-        // Loading spinner component
         const LoadingSpinner = () => (
           <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -136,12 +153,21 @@
           </svg>
         );
 
-        // A separate component for the class timetable table, to be used for both display and PDF export
-        const ClassTimetableTable = ({ className, timetableData, workingDayLabels, periodsPerDay, onExport, isExporting }) => {
+        const CalendarIcon = (props) => (
+          <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
+        );
+
+        // --- Timetable Table Components ---
+        const ClassTimetableTable = ({ className, timetableData, workingDayLabels, periodsPerDay, onExport, isExporting, halfDaysConfig }) => {
           return (
             <div className="space-y-4 overflow-x-auto">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
-                <h3 className="text-xl font-bold text-blue-800 mb-2 sm:mb-0">{className}</h3>
+                <h3 className="text-xl font-bold text-violet-700 mb-2 sm:mb-0">{className}</h3>
                 <Button
                   variant="secondary"
                   onClick={() => onExport(className)}
@@ -152,29 +178,32 @@
                   <span>{isExporting ? 'Exporting...' : 'Export to PDF'}</span>
                 </Button>
               </div>
-              <table className="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg">
+              <table className="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg overflow-hidden">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-3 py-3 sm:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Period</th>
+                    <th className="px-3 py-3 sm:px-6 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Period</th>
                     {workingDayLabels.map(day => (
-                      <th key={day} className="px-3 py-3 sm:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {day}
+                      <th key={day} className="px-3 py-3 sm:px-6 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                        {day} {halfDaysConfig[day] ? '(Half-Day)' : ''}
                       </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {Array.from({ length: periodsPerDay }).map((_, periodIndex) => (
-                    <tr key={periodIndex}>
+                    <tr key={periodIndex} className="hover:bg-gray-50 transition-colors">
                       <td className="px-3 py-4 sm:px-6 whitespace-nowrap font-medium text-gray-900 text-sm">{periodIndex + 1}</td>
                       {workingDayLabels.map(day => {
                         const lesson = timetableData[className]?.[day]?.[periodIndex] || { subject: 'Free', teacher: null };
-                        const isFree = lesson.subject === 'Free';
+                        const isFree = lesson.subject === 'Free' || lesson.subject === 'Recess' || lesson.subject === 'Half-Day Break';
+                        const bgColor = lesson.subject === 'Recess' ? 'bg-lime-100 text-lime-800' :
+                                        lesson.subject === 'Half-Day Break' ? 'bg-gray-200 text-gray-600' :
+                                        isFree ? 'bg-gray-100 text-gray-500' : 'bg-violet-50 text-violet-800';
                         return (
                           <td key={day} className="px-3 py-4 sm:px-6 whitespace-nowrap">
-                            <div className={`p-2 rounded-md ${isFree ? 'bg-gray-100 text-gray-500' : 'bg-blue-50 text-blue-800'}`}>
+                            <div className={`p-2 rounded-md ${bgColor}`} style={{minWidth: '100px'}}>
                               <div className="font-semibold text-sm">{lesson.subject}</div>
-                              <div className="text-xs">{!isFree && `(${lesson.teacher})`}</div>
+                              <div className="text-xs text-gray-600">{!isFree && `(${lesson.teacher})`}</div>
                             </div>
                           </td>
                         );
@@ -187,12 +216,11 @@
           );
         };
 
-        // A new component for the teacher timetable table
-        const TeacherTimetableTable = ({ teacherName, timetableData, workingDayLabels, periodsPerDay, onExport, isExporting }) => {
+        const TeacherTimetableTable = ({ teacherName, timetableData, workingDayLabels, periodsPerDay, onExport, isExporting, halfDaysConfig }) => {
           return (
             <div className="space-y-4 overflow-x-auto">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
-                <h3 className="text-xl font-bold text-blue-800 mb-2 sm:mb-0">{teacherName}</h3>
+                <h3 className="text-xl font-bold text-violet-700 mb-2 sm:mb-0">{teacherName}</h3>
                 <Button
                   variant="secondary"
                   onClick={() => onExport(teacherName)}
@@ -203,29 +231,32 @@
                   <span>{isExporting ? 'Exporting...' : 'Export to PDF'}</span>
                 </Button>
               </div>
-              <table className="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg">
+              <table className="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg overflow-hidden">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-3 py-3 sm:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Period</th>
+                    <th className="px-3 py-3 sm:px-6 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Period</th>
                     {workingDayLabels.map(day => (
-                      <th key={day} className="px-3 py-3 sm:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {day}
+                      <th key={day} className="px-3 py-3 sm:px-6 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                        {day} {halfDaysConfig[day] ? '(Half-Day)' : ''}
                       </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {Array.from({ length: periodsPerDay }).map((_, periodIndex) => (
-                    <tr key={periodIndex}>
+                    <tr key={periodIndex} className="hover:bg-gray-50 transition-colors">
                       <td className="px-3 py-4 sm:px-6 whitespace-nowrap font-medium text-gray-900 text-sm">{periodIndex + 1}</td>
                       {workingDayLabels.map(day => {
                         const lesson = timetableData[teacherName]?.[day]?.[periodIndex] || { className: 'Free' };
-                        const isFree = lesson.className === 'Free';
+                        const isFree = lesson.className === 'Free' || lesson.className === 'Recess' || lesson.className === 'Half-Day Break';
+                        const bgColor = lesson.className === 'Recess' ? 'bg-lime-100 text-lime-800' :
+                                        lesson.className === 'Half-Day Break' ? 'bg-gray-200 text-gray-600' :
+                                        isFree ? 'bg-gray-100 text-gray-500' : 'bg-rose-50 text-rose-800';
                         return (
                           <td key={day} className="px-3 py-4 sm:px-6 whitespace-nowrap">
-                            <div className={`p-2 rounded-md ${isFree ? 'bg-gray-100 text-gray-500' : 'bg-green-50 text-green-800'}`}>
+                            <div className={`p-2 rounded-md ${bgColor}`} style={{minWidth: '100px'}}>
                               <div className="font-semibold text-sm">{lesson.className}</div>
-                              <div className="text-xs">{!isFree && `(${lesson.subject})`}</div>
+                              <div className="text-xs text-gray-600">{!isFree && `(${lesson.subject})`}</div>
                             </div>
                           </td>
                         );
@@ -238,25 +269,28 @@
           );
         };
 
+        // --- Landing Page ---
         const LandingPage = ({ onNavigate }) => {
           return (
-            <div className="flex flex-col items-center justify-center min-h-screen p-4 md:p-6 text-center bg-white shadow-xl rounded-xl m-4 md:m-8">
-              <h1 className="text-3xl sm:text-5xl md:text-7xl font-extrabold tracking-tight text-gray-900">
-                Hello, I'm <span className="text-blue-600">Ayaan</span>
-              </h1>
-              <p className="mt-4 max-w-xl text-base sm:text-lg text-gray-600">
-                Welcome to the Timetable App! I’ve built this platform to make managing schedules simple, clear, and stress-free. Whether you’re a student, teacher, or school, this app helps you stay organized with easy access to classes, subjects, and activities—all in one place. My goal is to save your time and keep everything well-planned.
-              </p>
-              <div className="mt-8 flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
-                <Button onClick={() => onNavigate('app')} className="px-6 py-3 text-lg w-full sm:w-auto">
-                  Explore the App
-                </Button>
-               
-              </div>
+            <div className="flex flex-col items-center justify-center min-h-screen p-4 md:p-6 text-center bg-gradient-to-br from-violet-50 to-rose-100">
+              <Card className="max-w-3xl mx-auto p-8 md:p-12 shadow-2xl border-none">
+                <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-gray-900 leading-tight">
+                  Hello, I'm <span className="text-violet-600">Ayaan</span>
+                </h1>
+                <p className="mt-6 max-w-xl text-base sm:text-lg text-gray-700 leading-relaxed">
+                  Welcome to the Timetable App! I’ve built this platform to make managing schedules simple, clear, and stress-free. Whether you’re a student, teacher, or school, this app helps you stay organized with easy access to classes, subjects, and activities—all in one place. My goal is to save your time and keep everything well-planned.
+                </p>
+                <div className="mt-10 flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
+                  <Button onClick={() => onNavigate('app')} className="px-8 py-3 text-lg w-full sm:w-auto shadow-lg hover:shadow-xl">
+                    Explore the App
+                  </Button>
+                </div>
+              </Card>
             </div>
           );
         };
 
+        // --- Contact Page ---
         const ContactPage = () => {
           const [formState, setFormState] = React.useState({ name: '', email: '', message: '' });
 
@@ -267,24 +301,22 @@
 
           const handleSubmit = (e) => {
             e.preventDefault();
-            // In a real application, you'd send this data to a server.
-            // For now, we'll just log it.
             console.log('Contact form submitted:', formState);
             alert('Thank you for your message! (Form data logged to console)');
             setFormState({ name: '', email: '', message: '' });
           };
 
           return (
-            <div className="p-4 md:p-6">
-              <div className="max-w-xl mx-auto space-y-6">
-                <Card>
-                  <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 text-center">Contact Me</h2>
+            <div className="p-4 md:p-8 bg-gray-50 min-h-[calc(100vh-64px)] flex items-center justify-center">
+              <div className="max-w-xl mx-auto w-full">
+                <Card className="space-y-6">
+                  <h2 className="text-3xl font-bold text-gray-900 text-center">Contact Me</h2>
                   <p className="text-gray-600 mt-2 text-center">
                     Feel free to reach out with any questions or collaboration opportunities.
                   </p>
                   <form onSubmit={handleSubmit} className="mt-6 space-y-4">
                     <div>
-                      <label htmlFor="name" className="block text-sm font-medium text-gray-700">Name</label>
+                      <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Name</label>
                       <Input
                         id="name"
                         name="name"
@@ -295,7 +327,7 @@
                       />
                     </div>
                     <div>
-                      <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
+                      <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                       <Input
                         id="email"
                         name="email"
@@ -306,7 +338,7 @@
                       />
                     </div>
                     <div>
-                      <label htmlFor="message" className="block text-sm font-medium text-gray-700">Message</label>
+                      <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">Message</label>
                       <textarea
                         id="message"
                         name="message"
@@ -314,21 +346,21 @@
                         value={formState.message}
                         onChange={handleChange}
                         required
-                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="flex min-h-[80px] w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-background placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       ></textarea>
                     </div>
-                    <Button type="submit" className="w-full">
+                    <Button type="submit" className="w-full bg-violet-600 hover:bg-violet-700">
                       Send Message
                     </Button>
                   </form>
                 </Card>
               </div>
-            </div>
+              </div>
           );
         };
 
 
-        // Main Application Component
+        // --- Main Application Component ---
         const TimetableApp = () => {
           // State for settings
           const [teachers, setTeachers] = useState(['Mr. Smith', 'Ms. Jones', 'Dr. Williams']);
@@ -337,6 +369,8 @@
           const [periodsPerDay, setPeriodsPerDay] = useState(6);
           const [workingDays, setWorkingDays] = useState(5);
           const [offDays, setOffDays] = useState(['Saturday', 'Sunday']);
+          const [halfDaysConfig, setHalfDaysConfig] = useState({}); // { 'Monday': true, 'Tuesday': false }
+          const [recessPeriods, setRecessPeriods] = useState([]); // [2, 4] means recess after period 2 and 4
 
           // State for assignments
           const [assignments, setAssignments] = useState({
@@ -346,12 +380,26 @@
             '4B': { 'English': 'Dr. Williams', 'Maths': 'Mr. Smith', 'Science': 'Ms. Jones', 'History': 'Mr. Smith', 'Art': 'Dr. Williams', },
           });
 
+          // State for teacher max periods per day
+          const [teacherMaxPeriods, setTeacherMaxPeriods] = useState({}); // { 'Mr. Smith': 6, 'Ms. Jones': 6 }
+
+          // Initialize teacherMaxPeriods when teachers change
+          useEffect(() => {
+            const newMaxPeriods = {};
+            teachers.forEach(teacher => {
+              newMaxPeriods[teacher] = teacherMaxPeriods[teacher] || periodsPerDay; // Default to periodsPerDay
+            });
+            setTeacherMaxPeriods(newMaxPeriods);
+          }, [teachers, periodsPerDay]);
+
+
           // State for the generated timetable
           const [timetable, setTimetable] = useState(null);
           const [teacherTimetable, setTeacherTimetable] = useState(null); // New state for teacher timetable
           const [showSettings, setShowSettings] = useState(true);
           const [currentView, setCurrentView] = useState('class'); // New state for view toggle
           const [isGenerating, setIsGenerating] = useState(false); // To disable buttons while generating
+          const [generationError, setGenerationError] = useState('');
           const [isExportingAll, setIsExportingAll] = useState(false);
           const [isExporting, setIsExporting] = useState({ class: {}, teacher: {} });
           const [areLibrariesLoaded, setAreLibrariesLoaded] = useState(false);
@@ -384,36 +432,99 @@
             }));
           };
 
+          const handleRecessPeriodChange = (period, isChecked) => {
+            if (isChecked) {
+              setRecessPeriods(prev => [...prev, period].sort((a, b) => a - b));
+            } else {
+              setRecessPeriods(prev => prev.filter(p => p !== period));
+            }
+          };
+
+          const handleHalfDayChange = (day, isChecked) => {
+            setHalfDaysConfig(prev => ({
+                ...prev,
+                [day]: isChecked
+            }));
+          };
+
+          const handleTeacherMaxPeriodsChange = (teacher, value) => {
+            setTeacherMaxPeriods(prev => ({
+                ...prev,
+                [teacher]: parseInt(value) || 0
+            }));
+          };
+
           // The core timetable generation function, now with a parameter to control double periods
           const generateTimetable = (allowDoublePeriods = true) => {
             setIsGenerating(true);
-            setTimeout(() => {
-                // Master schedule to track teacher availability
-                const teacherSchedule = {};
-                teachers.forEach(teacher => {
-                  teacherSchedule[teacher] = {};
-                  workingDayLabels.forEach(day => {
-                    teacherSchedule[teacher][day] = new Array(periodsPerDay).fill(null);
-                  });
-                });
+            setGenerationError('');
+            setTimetable(null);
+            setTeacherTimetable(null);
 
+            setTimeout(() => {
+                // --- Initialize Schedules ---
                 const newTimetable = {};
+                const teacherSchedule = {};
+                const teacherDailyPeriodCount = {}; // Tracks periods assigned to each teacher per day
+
                 classes.forEach(className => {
                   newTimetable[className] = {};
-                  workingDayLabels.forEach(day => {
-                    newTimetable[className][day] = new Array(periodsPerDay).fill({ subject: 'Free', teacher: null });
-                  });
+                });
+                teachers.forEach(teacher => {
+                  teacherSchedule[teacher] = {};
+                  teacherDailyPeriodCount[teacher] = {};
                 });
 
-                // Create a list of all required assignments for all classes
+                // --- Pre-fill Recess and Half-Day Breaks ---
+                workingDayLabels.forEach(day => {
+                    const currentPeriodsPerDay = halfDaysConfig[day] ? Math.ceil(periodsPerDay / 2) : periodsPerDay;
+
+                    classes.forEach(className => {
+                        newTimetable[className][day] = new Array(periodsPerDay).fill({ subject: 'Free', teacher: null });
+                    });
+                    teachers.forEach(teacher => {
+                        teacherSchedule[teacher][day] = new Array(periodsPerDay).fill(null);
+                        teacherDailyPeriodCount[teacher][day] = 0;
+                    });
+
+                    for (let p = 0; p < periodsPerDay; p++) {
+                        const periodNum = p + 1;
+                        if (recessPeriods.includes(periodNum)) {
+                            classes.forEach(className => {
+                                newTimetable[className][day][p] = { subject: 'Recess', teacher: null };
+                            });
+                            teachers.forEach(teacher => {
+                                teacherSchedule[teacher][day][p] = { className: 'Recess', subject: null };
+                            });
+                        } else if (periodNum > currentPeriodsPerDay) { // Periods beyond half-day limit
+                            classes.forEach(className => {
+                                newTimetable[className][day][p] = { subject: 'Half-Day Break', teacher: null };
+                            });
+                            teachers.forEach(teacher => {
+                                teacherSchedule[teacher][day][p] = { className: 'Half-Day Break', subject: null };
+                            });
+                        }
+                    }
+                });
+
+                // --- Prepare Assignments ---
                 const allAssignments = [];
                 classes.forEach(className => {
                   const classAssignments = assignments[className] || {};
                   subjects.forEach(subject => {
                     const teacher = classAssignments[subject] || 'Unassigned';
                     if (teacher !== 'Unassigned') {
-                      // Distribute periods per subject evenly across working days
-                      const periodsPerSubject = Math.floor((periodsPerDay * workingDays) / subjects.length);
+                      // Calculate total available slots for this class, excluding recess/half-day breaks
+                      let classAvailableSlots = 0;
+                      workingDayLabels.forEach(day => {
+                          const actualPeriods = halfDaysConfig[day] ? Math.ceil(periodsPerDay / 2) : periodsPerDay;
+                          classAvailableSlots += actualPeriods - recessPeriods.filter(rp => rp <= actualPeriods).length;
+                      });
+
+                      // Distribute periods per subject, ensuring at least one if possible
+                      // This is a heuristic; perfect distribution is hard with many constraints
+                      const periodsPerSubject = Math.max(1, Math.floor(classAvailableSlots / subjects.length));
+
                       for (let i = 0; i < periodsPerSubject; i++) {
                         allAssignments.push({ className, subject, teacher });
                       }
@@ -421,43 +532,79 @@
                   });
                 });
 
-                // Shuffle the entire list of assignments to distribute them randomly
+                // Shuffle assignments for randomness
                 const shuffledAssignments = allAssignments.sort(() => Math.random() - 0.5);
 
-                // Place the assignments into the timetable with new constraint
+                // Track subject placement per day for 'no double periods' constraint
+                const classSubjectDayTracker = {};
+                classes.forEach(className => {
+                    classSubjectDayTracker[className] = {};
+                    subjects.forEach(subject => {
+                        classSubjectDayTracker[className][subject] = new Set(); // Stores days where subject is placed
+                    });
+                });
+
+                // --- Place Assignments ---
+                const unplacedAssignments = [];
+
                 shuffledAssignments.forEach(assignment => {
                   const { className, subject, teacher } = assignment;
                   let placed = false;
-                  let attempts = 0;
-                  const maxAttempts = periodsPerDay * workingDays;
+                  const maxAttemptsPerAssignment = periodsPerDay * workingDayLabels.length * 5; // Increased attempts
 
-                  while (!placed && attempts < maxAttempts) {
-                    const dayIndex = Math.floor(Math.random() * workingDayLabels.length);
-                    const day = workingDayLabels[dayIndex];
-                    const period = Math.floor(Math.random() * periodsPerDay);
+                  // Collect all possible slots for this assignment
+                  const possibleSlots = [];
+                  workingDayLabels.forEach(day => {
+                      const currentPeriodsForDay = halfDaysConfig[day] ? Math.ceil(periodsPerDay / 2) : periodsPerDay;
+                      for (let p = 0; p < currentPeriodsForDay; p++) {
+                          const periodNum = p + 1;
+                          // Only consider non-recess and non-half-day-break periods
+                          if (!recessPeriods.includes(periodNum) && newTimetable[className][day][p].subject === 'Free') {
+                              possibleSlots.push({ day, period: p });
+                          }
+                      }
+                  });
+                  // Shuffle possible slots to ensure randomness in selection
+                  possibleSlots.sort(() => Math.random() - 0.5);
 
-                    // Check if the current slot is free for the class and the teacher
+                  for (const { day, period } of possibleSlots) {
+                    if (placed) break; // Already placed this assignment
+
                     const isClassSlotFree = newTimetable[className]?.[day]?.[period]?.subject === 'Free';
                     const isTeacherSlotFree = teacherSchedule[teacher]?.[day]?.[period] === null;
+                    const teacherDailyLimitReached = teacherMaxPeriods[teacher] && teacherDailyPeriodCount[teacher][day] >= teacherMaxPeriods[teacher];
 
-                    // Check for double periods on the same day if not allowed
-                    const isSubjectAlreadyOnDay = newTimetable[className][day].some(lesson => lesson.subject === subject);
+                    const isSubjectAlreadyOnDay = classSubjectDayTracker[className][subject].has(day);
                     const isPlacementValid = allowDoublePeriods || !isSubjectAlreadyOnDay;
 
-                    if (isClassSlotFree && isTeacherSlotFree && isPlacementValid) {
+                    if (isClassSlotFree && isTeacherSlotFree && !teacherDailyLimitReached && isPlacementValid) {
                       newTimetable[className][day][period] = { subject, teacher };
                       teacherSchedule[teacher][day][period] = { className, subject };
+                      classSubjectDayTracker[className][subject].add(day);
+                      teacherDailyPeriodCount[teacher][day] = (teacherDailyPeriodCount[teacher][day] || 0) + 1;
                       placed = true;
                     }
-                    attempts++;
+                  }
+
+                  if (!placed) {
+                    unplacedAssignments.push(assignment);
                   }
                 });
+
+                // --- Handle Unplaced Assignments (Report errors) ---
+                if (unplacedAssignments.length > 0) {
+                    const errorDetails = unplacedAssignments.map(a => `${a.subject} for ${a.className} (Teacher: ${a.teacher})`).join(', ');
+                    setGenerationError(`Could not place ${unplacedAssignments.length} assignments: ${errorDetails}. Try adjusting settings (e.g., increase periods, reduce teacher max periods, allow double periods, check assignments).`);
+                    console.error("Unplaced assignments:", unplacedAssignments);
+                }
+
 
                 setTimetable(newTimetable);
                 setTeacherTimetable(teacherSchedule);
                 setIsGenerating(false);
             }, 500); // Add a small delay for a better user experience
           };
+
 
           const loadScript = (src) => {
             return new Promise((resolve, reject) => {
@@ -486,186 +633,11 @@
             loadPdfLibraries();
           }, []);
 
-          const renderClassTimetableToHtml = (className, timetableData, workingDayLabels, periodsPerDay) => {
-            const tableHeader = `
-              <thead class="bg-gray-50">
-                <tr>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Period</th>
-                  ${workingDayLabels.map(day => `
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">${day}</th>
-                  `).join('')}
-                </tr>
-              </thead>
-            `;
-
-            const tableBody = `
-              <tbody class="bg-white divide-y divide-gray-200">
-                ${Array.from({ length: periodsPerDay }).map((_, periodIndex) => `
-                  <tr>
-                    <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900 text-sm">${periodIndex + 1}</td>
-                    ${workingDayLabels.map(day => {
-                      const lesson = timetableData[className]?.[day]?.[periodIndex] || { subject: 'Free', teacher: null };
-                      const isFree = lesson.subject === 'Free';
-                      return `
-                        <td class="px-6 py-4 whitespace-nowrap">
-                          <div class="p-2 rounded-md ${isFree ? 'bg-gray-100 text-gray-500' : 'bg-blue-50 text-blue-800'}">
-                            <div class="font-semibold text-sm">${lesson.subject}</div>
-                            <div class="text-xs">${!isFree ? `(${lesson.teacher})` : ''}</div>
-                          </div>
-                        </td>
-                      `;
-                    }).join('')}
-                  </tr>
-                `).join('')}
-              </tbody>
-            `;
-
-            return `
-              <div class="space-y-4 overflow-x-auto p-6 bg-white rounded-xl shadow-md">
-                <div class="flex justify-between items-center mb-4">
-                  <h3 class="text-xl font-bold text-blue-800">${className}</h3>
-                </div>
-                <table class="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg">
-                  ${tableHeader}
-                  ${tableBody}
-                </table>
-              </div>
-            `;
-          };
-
-          const renderTeacherTimetableToHtml = (teacherName, timetableData, workingDayLabels, periodsPerDay) => {
-            const tableHeader = `
-              <thead class="bg-gray-50">
-                <tr>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Period</th>
-                  ${workingDayLabels.map(day => `
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">${day}</th>
-                  `).join('')}
-                </tr>
-              </thead>
-            `;
-
-            const tableBody = `
-              <tbody class="bg-white divide-y divide-gray-200">
-                ${Array.from({ length: periodsPerDay }).map((_, periodIndex) => `
-                  <tr>
-                    <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900 text-sm">${periodIndex + 1}</td>
-                    ${workingDayLabels.map(day => {
-                      const lesson = timetableData[teacherName]?.[day]?.[periodIndex] || { className: 'Free' };
-                      const isFree = lesson.className === 'Free';
-                      return `
-                        <td class="px-6 py-4 whitespace-nowrap">
-                          <div class="p-2 rounded-md ${isFree ? 'bg-gray-100 text-gray-500' : 'bg-green-50 text-green-800'}">
-                            <div class="font-semibold text-sm">${lesson.className}</div>
-                            <div class="text-xs">${!isFree ? `(${lesson.subject})` : ''}</div>
-                          </div>
-                        </td>
-                      `;
-                    }).join('')}
-                  </tr>
-                `).join('')}
-              </tbody>
-            `;
-
-            return `
-              <div class="space-y-4 overflow-x-auto p-6 bg-white rounded-xl shadow-md">
-                <div class="flex justify-between items-center mb-4">
-                  <h3 class="text-xl font-bold text-blue-800">${teacherName}</h3>
-                </div>
-                <table class="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg">
-                  ${tableHeader}
-                  ${tableBody}
-                </table>
-              </div>
-            `;
-          };
-
-          const exportTimetableToPDF = async (entityName, type) => {
-            if (!areLibrariesLoaded || (!timetable && type === 'class') || (!teacherTimetable && type === 'teacher')) {
-              console.log('Timetable not generated or libraries not loaded.');
-              return;
-            }
-
-            setIsExporting(prev => ({
-              ...prev,
-              [type]: { ...prev[type], [entityName]: true }
-            }));
-
-            const { jsPDF } = window.jspdf;
-
-            const container = document.createElement('div');
-            container.style.position = 'absolute';
-            container.style.left = '-9999px';
-            document.body.appendChild(container);
-
-            try {
-              const element = document.createElement('div');
-              if (type === 'class') {
-                element.innerHTML = renderClassTimetableToHtml(entityName, timetable, workingDayLabels, periodsPerDay);
-              } else {
-                element.innerHTML = renderTeacherTimetableToHtml(entityName, teacherTimetable, workingDayLabels, periodsPerDay);
-              }
-              container.appendChild(element);
-
-              await new Promise(resolve => setTimeout(resolve, 50));
-
-              const canvas = await window.html2canvas(element, { scale: 2, useCORS: true });
-              const imgData = canvas.toDataURL('image/png');
-              const pdf = new jsPDF('p', 'mm', 'a4');
-              const imgWidth = 210;
-              const pageHeight = 295;
-              const imgHeight = canvas.height * imgWidth / canvas.width;
-              let heightLeft = imgHeight;
-              let position = 0;
-
-              pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-              heightLeft -= pageHeight;
-
-              while (heightLeft >= 0) {
-                position = heightLeft - imgHeight;
-                pdf.addPage();
-                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-                heightLeft -= pageHeight;
-              }
-              pdf.save(`${entityName}_timetable.pdf`);
-
-              container.removeChild(element);
-            } catch (error) {
-              console.error(`[ERROR] Error during PDF export for ${entityName}:`, error);
-            } finally {
-              setIsExporting(prev => ({
-                ...prev,
-                [type]: { ...prev[type], [entityName]: false }
-              }));
-              document.body.removeChild(container);
-            }
-          };
-
-
-          const handleExportAll = async () => {
-            if (!timetable && !teacherTimetable || !areLibrariesLoaded) {
-              console.log('Timetable not generated or libraries not loaded.');
-              return;
-            }
-            setIsExportingAll(true);
-
-            if (currentView === 'class') {
-              for (const cls of classes) {
-                await exportTimetableToPDF(cls, 'class');
-              }
-            } else {
-              for (const teacher of teachers) {
-                await exportTimetableToPDF(teacher, 'teacher');
-              }
-            }
-            setIsExportingAll(false);
-          };
-
           return (
-            <div className="min-h-screen bg-gray-50 p-4 font-sans text-gray-800">
+            <div className="min-h-screen bg-gray-100 p-4 font-sans text-gray-900">
               <div className="max-w-7xl mx-auto space-y-8">
                 <h1 className="text-3xl sm:text-4xl font-extrabold text-center text-gray-900 leading-tight">Timetable Maker</h1>
-                <p className="text-center text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
+                <p className="text-center text-base sm:text-lg text-gray-700 max-w-2xl mx-auto">
                   Set up your teachers, classes, and subjects, then assign teachers to subjects to generate a conflict-free timetable.
                 </p>
 
@@ -673,8 +645,8 @@
                 <div className="space-y-6">
                   {/* Toggle Settings Button */}
                   <div className="flex justify-end">
-                    <Button variant="secondary" onClick={() => setShowSettings(!showSettings)} className="flex items-center space-x-2">
-                      {showSettings ? <ToggleLeftIcon /> : <ToggleRightIcon />}
+                    <Button variant="outline" onClick={() => setShowSettings(!showSettings)} className="flex items-center space-x-2 text-gray-700 hover:bg-gray-100">
+                      {showSettings ? <ToggleLeftIcon className="h-5 w-5" /> : <ToggleRightIcon className="h-5 w-5" />}
                       <span>{showSettings ? 'Hide Settings' : 'Show Settings'}</span>
                     </Button>
                   </div>
@@ -683,11 +655,11 @@
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       {/* Settings Card */}
                       <Card className="space-y-6">
-                        <h2 className="text-xl sm:text-2xl font-bold text-blue-800">School Details</h2>
+                        <h2 className="text-2xl font-bold text-violet-700">School Details</h2>
                         <div className="space-y-4">
                           {/* Teachers */}
                           <div>
-                            <h3 className="font-semibold text-lg">Teachers</h3>
+                            <h3 className="font-semibold text-lg text-gray-800 mb-2">Teachers</h3>
                             <div className="space-y-2">
                               <Input
                                 placeholder="Add new teacher"
@@ -700,9 +672,9 @@
                               />
                               <div className="flex flex-wrap gap-2 pt-2">
                                 {teachers.map(teacher => (
-                                  <span key={teacher} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full flex items-center space-x-1 text-sm">
+                                  <span key={teacher} className="bg-violet-100 text-violet-800 px-3 py-1 rounded-full flex items-center space-x-1 text-sm">
                                     <span>{teacher}</span>
-                                    <button onClick={() => removeItem(teacher, setTeachers)} className="text-blue-500 hover:text-blue-700 font-bold ml-1">
+                                    <button onClick={() => removeItem(teacher, setTeachers)} className="text-violet-500 hover:text-violet-700 font-bold ml-1">
                                       &times;
                                     </button>
                                   </span>
@@ -713,7 +685,7 @@
 
                           {/* Classes */}
                           <div>
-                            <h3 className="font-semibold text-lg">Classes</h3>
+                            <h3 className="font-semibold text-lg text-gray-800 mb-2">Classes</h3>
                             <div className="space-y-2">
                               <Input
                                 placeholder="Add new class"
@@ -726,9 +698,9 @@
                               />
                               <div className="flex flex-wrap gap-2 pt-2">
                                 {classes.map(cls => (
-                                  <span key={cls} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full flex items-center space-x-1 text-sm">
+                                  <span key={cls} className="bg-violet-100 text-violet-800 px-3 py-1 rounded-full flex items-center space-x-1 text-sm">
                                     <span>{cls}</span>
-                                    <button onClick={() => removeItem(cls, setClasses)} className="text-blue-500 hover:text-blue-700 font-bold ml-1">
+                                    <button onClick={() => removeItem(cls, setClasses)} className="text-violet-500 hover:text-violet-700 font-bold ml-1">
                                       &times;
                                     </button>
                                   </span>
@@ -739,7 +711,7 @@
 
                           {/* Subjects */}
                           <div>
-                            <h3 className="font-semibold text-lg">Subjects</h3>
+                            <h3 className="font-semibold text-lg text-gray-800 mb-2">Subjects</h3>
                             <div className="space-y-2">
                               <Input
                                 placeholder="Add new subject"
@@ -752,9 +724,9 @@
                               />
                               <div className="flex flex-wrap gap-2 pt-2">
                                 {subjects.map(subject => (
-                                  <span key={subject} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full flex items-center space-x-1 text-sm">
+                                  <span key={subject} className="bg-violet-100 text-violet-800 px-3 py-1 rounded-full flex items-center space-x-1 text-sm">
                                     <span>{subject}</span>
-                                    <button onClick={() => removeItem(subject, setSubjects)} className="text-blue-500 hover:text-blue-700 font-bold ml-1">
+                                    <button onClick={() => removeItem(subject, setSubjects)} className="text-violet-500 hover:text-violet-700 font-bold ml-1">
                                       &times;
                                     </button>
                                   </span>
@@ -767,7 +739,7 @@
                         {/* Periods and Days */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
-                            <label className="font-semibold text-sm">Periods per Day</label>
+                            <label className="font-semibold text-sm text-gray-800 mb-1 block">Periods per Day</label>
                             <Input
                               type="number"
                               value={periodsPerDay}
@@ -776,7 +748,7 @@
                             />
                           </div>
                           <div>
-                            <label className="font-semibold text-sm">Working Days</label>
+                            <label className="font-semibold text-sm text-gray-800 mb-1 block">Working Days</label>
                             <Input
                               type="number"
                               value={workingDays}
@@ -789,13 +761,13 @@
 
                         {/* Off Days */}
                         <div>
-                          <h3 className="font-semibold text-lg">Off Days</h3>
-                          <div className="flex flex-wrap gap-2 mt-2">
+                          <h3 className="font-semibold text-lg text-gray-800 mb-2">Off Days</h3>
+                          <div className="flex flex-wrap gap-x-4 gap-y-2 mt-2">
                             {weekDays.map(day => (
-                              <div key={day} className="flex items-center space-x-2">
+                              <div key={`off-day-${day}`} className="flex items-center space-x-2">
                                 <input
                                   type="checkbox"
-                                  id={day}
+                                  id={`off-day-${day}`}
                                   checked={offDays.includes(day)}
                                   onChange={(e) => {
                                     if (e.target.checked) {
@@ -804,9 +776,49 @@
                                       setOffDays(offDays.filter(d => d !== day));
                                     }
                                   }}
-                                  className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                  className="h-4 w-4 text-violet-600 border-gray-300 rounded focus:ring-violet-500"
                                 />
-                                <label htmlFor={day} className="text-sm font-medium">{day}</label>
+                                <label htmlFor={`off-day-${day}`} className="text-sm font-medium text-gray-700">{day}</label>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Half Days */}
+                        <div>
+                          <h3 className="font-semibold text-lg text-gray-800 mb-2">Half-Days</h3>
+                          <p className="text-sm text-gray-600 mb-2">Select days that will have half the periods (rounded up).</p>
+                          <div className="flex flex-wrap gap-x-4 gap-y-2 mt-2">
+                            {workingDayLabels.map(day => (
+                              <div key={`half-day-${day}`} className="flex items-center space-x-2">
+                                <input
+                                  type="checkbox"
+                                  id={`half-day-${day}`}
+                                  checked={halfDaysConfig[day] || false}
+                                  onChange={(e) => handleHalfDayChange(day, e.target.checked)}
+                                  className="h-4 w-4 text-violet-600 border-gray-300 rounded focus:ring-violet-500"
+                                />
+                                <label htmlFor={`half-day-${day}`} className="text-sm font-medium text-gray-700">{day}</label>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Recess Periods */}
+                        <div>
+                          <h3 className="font-semibold text-lg text-gray-800 mb-2">Recess Periods</h3>
+                          <p className="text-sm text-gray-600 mb-2">Select periods after which a recess will occur.</p>
+                          <div className="flex flex-wrap gap-x-4 gap-y-2 mt-2">
+                            {Array.from({ length: periodsPerDay }).map((_, i) => (
+                              <div key={`recess-${i + 1}`} className="flex items-center space-x-2">
+                                <input
+                                  type="checkbox"
+                                  id={`recess-${i + 1}`}
+                                  checked={recessPeriods.includes(i + 1)}
+                                  onChange={(e) => handleRecessPeriodChange(i + 1, e.target.checked)}
+                                  className="h-4 w-4 text-violet-600 border-gray-300 rounded focus:ring-violet-500"
+                                />
+                                <label htmlFor={`recess-${i + 1}`} className="text-sm font-medium text-gray-700">After Period {i + 1}</label>
                               </div>
                             ))}
                           </div>
@@ -815,11 +827,30 @@
 
                       {/* Assignments Card */}
                       <Card className="space-y-6">
-                        <h2 className="text-xl sm:text-2xl font-bold text-blue-800">Teacher Assignments</h2>
+                        <h2 className="text-2xl font-bold text-violet-700">Teacher Assignments & Limits</h2>
                         {classes.length > 0 && subjects.length > 0 ? (
-                          <div className="space-y-4">
+                          <div className="space-y-6 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
+                            {/* Teacher Max Periods */}
+                            <div className="space-y-4 border-b border-gray-200 pb-4">
+                                <h3 className="text-lg sm:text-xl font-semibold text-gray-900">Max Periods per Teacher (per day)</h3>
+                                {teachers.map(teacher => (
+                                    <div key={`max-periods-${teacher}`} className="flex items-center space-x-4">
+                                        <span className="w-1/2 font-medium text-gray-700">{teacher}</span>
+                                        <Input
+                                            type="number"
+                                            value={teacherMaxPeriods[teacher] || periodsPerDay}
+                                            onChange={(e) => handleTeacherMaxPeriodsChange(teacher, e.target.value)}
+                                            min="0"
+                                            max={periodsPerDay}
+                                            className="w-1/2"
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Subject Assignments */}
                             {classes.map(cls => (
-                              <div key={cls} className="space-y-2">
+                              <div key={cls} className="space-y-2 border-b border-gray-200 pb-4 last:border-b-0">
                                 <h3 className="text-lg sm:text-xl font-semibold text-gray-900">{cls}</h3>
                                 {subjects.map(subject => (
                                   <div key={subject} className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
@@ -845,10 +876,10 @@
 
                 {/* Generate Buttons */}
                 <div className="flex flex-col sm:flex-row justify-center pt-6 space-y-4 sm:space-y-0 sm:space-x-4">
-                  <Button onClick={() => generateTimetable(true)} className="px-8 py-3 text-lg bg-green-600 hover:bg-green-700 w-full sm:w-auto" disabled={isGenerating}>
+                  <Button onClick={() => generateTimetable(true)} className="px-8 py-3 text-lg bg-violet-600 hover:bg-violet-700 w-full sm:w-auto shadow-md" disabled={isGenerating}>
                     {isGenerating ? <LoadingSpinner /> : 'Generate Timetable (Allow Double Periods)'}
                   </Button>
-                  <Button onClick={() => generateTimetable(false)} className="px-8 py-3 text-lg bg-blue-600 hover:bg-blue-700 w-full sm:w-auto" disabled={isGenerating}>
+                  <Button onClick={() => generateTimetable(false)} className="px-8 py-3 text-lg bg-rose-600 hover:bg-rose-700 w-full sm:w-auto shadow-md" disabled={isGenerating}>
                     {isGenerating ? <LoadingSpinner /> : 'Generate Timetable (No Double Periods)'}
                   </Button>
                   {timetable && (
@@ -856,29 +887,36 @@
                       variant="secondary"
                       onClick={handleExportAll}
                       disabled={isExportingAll || Object.values(isExporting[currentView]).some(Boolean)}
-                      className="px-8 py-3 text-lg flex items-center justify-center space-x-2 w-full sm:w-auto"
+                      className="px-8 py-3 text-lg flex items-center justify-center space-x-2 w-full sm:w-auto shadow-md"
                     >
-                      {isExportingAll && <LoadingSpinner />}
+                      {isExportingAll && <LoadingSpinner className="text-gray-800" />}
                       <span>{isExportingAll ? 'Exporting All...' : 'Export All to PDF'}</span>
                     </Button>
                   )}
                 </div>
+
+                {generationError && (
+                    <div className="bg-rose-100 border border-rose-400 text-rose-700 px-4 py-3 rounded relative mt-4" role="alert">
+                        <strong className="font-bold">Generation Error:</strong>
+                        <span className="block sm:inline"> {generationError}</span>
+                    </div>
+                )}
 
                 {/* Timetable Display */}
                 {timetable && (
                   <div className="pt-8">
                     <div className="flex flex-col sm:flex-row justify-center space-y-2 sm:space-y-0 sm:space-x-4 mb-6">
                       <Button
-                        variant={currentView === 'class' ? 'default' : 'secondary'}
+                        variant={currentView === 'class' ? 'default' : 'outline'}
                         onClick={() => setCurrentView('class')}
-                        className={`w-full sm:w-auto ${currentView === 'class' ? '' : 'text-gray-700'}`}
+                        className={`w-full sm:w-auto ${currentView === 'class' ? 'bg-violet-600 text-white' : 'text-gray-700 hover:bg-gray-100'}`}
                       >
                         Class Timetables
                       </Button>
                       <Button
-                        variant={currentView === 'teacher' ? 'default' : 'secondary'}
+                        variant={currentView === 'teacher' ? 'default' : 'outline'}
                         onClick={() => setCurrentView('teacher')}
-                        className={`w-full sm:w-auto ${currentView === 'teacher' ? '' : 'text-gray-700'}`}
+                        className={`w-full sm:w-auto ${currentView === 'teacher' ? 'bg-violet-600 text-white' : 'text-gray-700 hover:bg-gray-100'}`}
                       >
                         Teacher Timetables
                       </Button>
@@ -886,7 +924,7 @@
 
                     {currentView === 'class' && (
                       <div className="space-y-8">
-                        <h2 className="text-xl sm:text-3xl font-bold text-center text-gray-900 mb-6">Generated Timetable</h2>
+                        <h2 className="text-2xl sm:text-3xl font-bold text-center text-gray-900 mb-6">Generated Class Timetables</h2>
                         {classes.map(cls => (
                           <Card key={cls} id={`timetable-class-${cls}`} className="space-y-4 overflow-x-auto">
                             <ClassTimetableTable
@@ -896,6 +934,7 @@
                               periodsPerDay={periodsPerDay}
                               onExport={(name) => exportTimetableToPDF(name, 'class')}
                               isExporting={isExporting.class[cls]}
+                              halfDaysConfig={halfDaysConfig}
                             />
                           </Card>
                         ))}
@@ -904,7 +943,7 @@
 
                     {currentView === 'teacher' && teacherTimetable && (
                       <div className="space-y-8">
-                        <h2 className="text-xl sm:text-3xl font-bold text-center text-gray-900 mb-6">Teacher Timetables</h2>
+                        <h2 className="text-2xl sm:text-3xl font-bold text-center text-gray-900 mb-6">Generated Teacher Timetables</h2>
                         {teachers.map(teacher => (
                           <Card key={teacher} id={`timetable-teacher-${teacher}`} className="space-y-4 overflow-x-auto">
                             <TeacherTimetableTable
@@ -914,6 +953,7 @@
                               periodsPerDay={periodsPerDay}
                               onExport={(name) => exportTimetableToPDF(name, 'teacher')}
                               isExporting={isExporting.teacher[teacher]}
+                              halfDaysConfig={halfDaysConfig}
                             />
                           </Card>
                         ))}
@@ -927,7 +967,7 @@
         };
 
 
-        // The main App component that handles navigation
+        // --- Main App Component (Handles Navigation) ---
         const App = () => {
           const [currentPage, setCurrentPage] = useState('landing');
           const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -978,13 +1018,13 @@
           const isLandingPage = currentPage === 'landing';
 
           return (
-            <div className="flex flex-col md:flex-row min-h-screen bg-gray-50 font-sans text-gray-800">
+            <div className="flex flex-col md:flex-row min-h-screen bg-gray-100 font-sans text-gray-900">
               {/* Mobile Header and Sidebar Toggle */}
               {!isLandingPage && (
-                <div className="md:hidden flex items-center justify-between p-4 bg-white shadow-lg sticky top-0 z-50">
-                  <span className="text-xl font-bold text-blue-600">Ayaan-G time table maker.</span>
-                  <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    {isSidebarOpen ? <XIcon /> : <MenuIcon />}
+                <div className="md:hidden flex items-center justify-between p-4 bg-white shadow-lg sticky top-0 z-50 border-b border-gray-200">
+                  <span className="text-xl font-bold text-violet-600">Ayaan's Timetable</span>
+                  <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-500">
+                    {isSidebarOpen ? <XIcon className="h-6 w-6 text-gray-700" /> : <MenuIcon className="h-6 w-6 text-gray-700" />}
                   </button>
                 </div>
               )}
@@ -995,34 +1035,37 @@
                 className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl transform transition-transform duration-300 ease-in-out md:static md:translate-x-0 md:w-64 md:border-r md:shadow-none p-4 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${isLandingPage ? 'hidden' : ''}`}
               >
                 <div className="flex flex-col h-full">
-                  <div className="flex items-center justify-between md:justify-center mb-6">
-                    <span className="text-2xl font-bold text-blue-600">Ayaan-G time table maker .</span>
-                    <button onClick={() => setIsSidebarOpen(false)} className="p-2 rounded-md hover:bg-gray-200 focus:outline-none md:hidden">
-                      <XIcon />
+                  <div className="flex items-center justify-between md:justify-center mb-8">
+                    <span className="text-2xl font-bold text-violet-600">Ayaan's Timetable</span>
+                    <button onClick={() => setIsSidebarOpen(false)} className="p-2 rounded-md hover:bg-gray-100 focus:outline-none md:hidden">
+                      <XIcon className="h-6 w-6 text-gray-700" />
                     </button>
                   </div>
                   <nav className="flex-1 space-y-2">
                     <Button
-                      variant="outline"
-                      className={`flex items-center justify-start w-full space-x-3 text-lg py-3 ${currentPage === 'landing' ? 'bg-gray-100' : ''}`}
+                      variant={currentPage === 'landing' ? 'default' : 'ghost'}
+                      className={`flex items-center justify-start w-full space-x-3 text-base py-2.5 ${currentPage === 'landing' ? 'bg-violet-50 text-violet-700 hover:bg-violet-100' : 'text-gray-700 hover:bg-gray-100'}`}
                       onClick={() => handleNavigate('landing')}
                     >
                       <HomeIcon className="w-5 h-5" />
                       <span>Home</span>
                     </Button>
                     <Button
-                      variant="outline"
-                      className={`flex items-center justify-start w-full space-x-3 text-lg py-3 ${currentPage === 'app' ? 'bg-gray-100' : ''}`}
+                      variant={currentPage === 'app' ? 'default' : 'ghost'}
+                      className={`flex items-center justify-start w-full space-x-3 text-base py-2.5 ${currentPage === 'app' ? 'bg-violet-50 text-violet-700 hover:bg-violet-100' : 'text-gray-700 hover:bg-gray-100'}`}
                       onClick={() => handleNavigate('app')}
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-                          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                          <line x1="12" y1="3" x2="12" y2="21" />
-                          <line x1="3" y1="12" x2="21" y2="12" />
-                      </svg>
+                      <CalendarIcon className="w-5 h-5" />
                       <span>Timetable App</span>
                     </Button>
-                    
+                    <Button
+                      variant={currentPage === 'contact' ? 'default' : 'ghost'}
+                      className={`flex items-center justify-start w-full space-x-3 text-base py-2.5 ${currentPage === 'contact' ? 'bg-violet-50 text-violet-700 hover:bg-violet-100' : 'text-gray-700 hover:bg-gray-100'}`}
+                      onClick={() => handleNavigate('contact')}
+                    >
+                      <MessageSquareIcon className="w-5 h-5" />
+                      <span>Contact</span>
+                    </Button>
                   </nav>
                 </div>
               </aside>
